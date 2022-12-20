@@ -11,13 +11,17 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+
 @Controller
 @RequestMapping("/ig")
 @RequiredArgsConstructor
 public class InformationGainController {
         private final KafkaSolutionsProducer InformationGainProducer;
 
-
+    public static BufferedWriter br;
+    public boolean firstTime = true;
     @PostMapping
     public ResponseEntity<DataSolution> createMessage() throws Exception {
         var data = SelectionFeaturesUtils.createData();
@@ -25,11 +29,18 @@ public class InformationGainController {
             InformationGainService informationGainService = new InformationGainService();
             data = informationGainService.doIG();
             int k = 0;
-            while (k <100){
-                informationGainService.GenerationSolutions(data, 5);
+            br = new BufferedWriter(new FileWriter("InfoGain_METRICS_30",true));
+            if(firstTime) {
+                br.write("solutionFeatures;f1Score;neighborhood;iterationNeighborhood;localSearch;iterationLocalSearch;runnigTime");
+                br.newLine();
+                firstTime = false;
+            }
+            while (k <10000){
+                informationGainService.GenerationSolutions(data, 5, br);
                 InformationGainProducer.send(data);
                 k++;
             }
+            br.close();
         }catch(IllegalArgumentException ex){
             throw ex;
         } catch (Exception e) {

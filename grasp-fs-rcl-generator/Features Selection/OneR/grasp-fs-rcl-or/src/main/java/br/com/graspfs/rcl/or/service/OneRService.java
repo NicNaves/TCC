@@ -2,12 +2,14 @@ package br.com.graspfs.rcl.or.service;
 
 import br.com.graspfs.rcl.or.dto.DataSolution;
 import br.com.graspfs.rcl.or.dto.FeatureAvaliada;
+import br.com.graspfs.rcl.or.machinelearning.MachineLearning;
 import br.com.graspfs.rcl.or.util.MachineLearningUtils;
 import br.com.graspfs.rcl.or.util.SelectionFeaturesUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import weka.core.Instances;
 
+import java.io.BufferedWriter;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -39,7 +41,8 @@ public class OneRService {
 
         }catch (RuntimeException ex){
             logg.info("ERROR : "+ ex.getMessage());
-            throw  new Exception("Erro na logica para o machine learning");
+            ex.printStackTrace();
+            throw new Exception("Erro na logica para o machine learning");
         }
     }
     public DataSolution doOR() throws Exception {
@@ -51,8 +54,10 @@ public class OneRService {
 
         return InitialSolution;
     }
-    public DataSolution GenerationSolutions(DataSolution rcl, int n){
+    public DataSolution GenerationSolutions(DataSolution rcl, int n, BufferedWriter br) throws Exception {
         Random random = new Random();
+        final Long time = System.currentTimeMillis();
+        float valueOfFeatures;
         short i = 0;
         ArrayList<Integer> rclfeatures = new ArrayList<>(rcl.getRclfeatures());
         ArrayList<Integer> solutionfeatures = new ArrayList<>();
@@ -60,8 +65,20 @@ public class OneRService {
             solutionfeatures.add(rclfeatures.remove(random.nextInt(rclfeatures.size()-1)));
             i++;
         }while(i<n);
+        valueOfFeatures = MachineLearning.evaluateSolution(rcl.getSolutionFeatures());//sumArray(solution.getSolutionFeatures());
+        rcl.setF1Score(Float.valueOf(valueOfFeatures));
+        rcl.setRunnigTime(time);
         rcl.setSolutionFeatures(solutionfeatures);
         logg.info("RCL features: "+ rcl.getRclfeatures() + " Solution Features: " + rcl.getSolutionFeatures());
+        br.write(rcl.getSolutionFeatures()+";"
+                +rcl.getF1Score()+";"
+                +rcl.getNeighborhood()+";"
+                +rcl.getIterationNeighborhood()+";"
+                +rcl.getLocalSearch()+";"
+                +rcl.getIterationLocalSearch()+";"
+                +rcl.getRunnigTime()
+        );
+        br.newLine();
         return rcl;
     }
 }

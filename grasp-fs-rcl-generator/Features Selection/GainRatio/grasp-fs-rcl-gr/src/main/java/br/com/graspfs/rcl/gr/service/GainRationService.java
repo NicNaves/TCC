@@ -2,6 +2,7 @@ package br.com.graspfs.rcl.gr.service;
 
 import br.com.graspfs.rcl.gr.dto.DataSolution;
 import br.com.graspfs.rcl.gr.dto.FeatureAvaliada;
+import br.com.graspfs.rcl.gr.machinelearning.MachineLearning;
 import br.com.graspfs.rcl.gr.util.MachineLearningUtils;
 import br.com.graspfs.rcl.gr.util.SelectionFeaturesUtils;
 import org.slf4j.Logger;
@@ -9,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import weka.core.Instances;
 
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 import static br.com.graspfs.rcl.gr.util.SelectionFeaturesUtils.quickSort;
@@ -47,14 +50,16 @@ public class GainRationService {
     public DataSolution doGainRation() throws Exception {
         Instances datasetTreinamento = MachineLearningUtils.lerDataset("ereno1ktrain.arff");
         DataSolution InitialSolution = SelectionFeaturesUtils.createData();
-        rankFeatures(InitialSolution, datasetTreinamento, 20);
+        rankFeatures(InitialSolution, datasetTreinamento, 10);
         logg.info("RCL features: "+ InitialSolution.getRclfeatures());
         return InitialSolution;
 
     }
 
-    public DataSolution GenerationSolutions(DataSolution rcl, int n){
+    public DataSolution GenerationSolutions(DataSolution rcl, int n,  BufferedWriter br) throws Exception {
         var random = new Random();
+        final var time = System.currentTimeMillis();
+        float valueOfFeatures;
         short i = 0;
         ArrayList<Integer> rclfeatures = new ArrayList<>(rcl.getRclfeatures());
         ArrayList<Integer> solutionfeatures = new ArrayList<>();
@@ -63,7 +68,19 @@ public class GainRationService {
             i++;
         }while(i<n);
         rcl.setSolutionFeatures(solutionfeatures);
+        valueOfFeatures = MachineLearning.evaluateSolution(rcl.getSolutionFeatures());//sumArray(solution.getSolutionFeatures());
+        rcl.setF1Score(Float.valueOf(valueOfFeatures));
+        rcl.setRunnigTime(time);
         logg.info("RCL features: "+ rcl.getRclfeatures() + " Solution Features: " + rcl.getSolutionFeatures());
+        br.write(rcl.getSolutionFeatures()+";"
+                +rcl.getF1Score()+";"
+                +rcl.getNeighborhood()+";"
+                +rcl.getIterationNeighborhood()+";"
+                +rcl.getLocalSearch()+";"
+                +rcl.getIterationLocalSearch()+";"
+                +rcl.getRunnigTime()
+        );
+        br.newLine();
         return rcl;
     }
 

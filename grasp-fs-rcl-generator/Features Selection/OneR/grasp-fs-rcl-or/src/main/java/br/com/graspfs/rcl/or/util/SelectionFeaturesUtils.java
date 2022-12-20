@@ -30,6 +30,7 @@ public class SelectionFeaturesUtils {
     }
 
 
+
     public static void quickSort(FeatureAvaliada[] vetor, int inicio, int fim) {
         if (inicio < fim) {
             int posicaoPivo = separar(vetor, inicio, fim);
